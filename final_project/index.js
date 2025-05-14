@@ -3,6 +3,8 @@ const jwt = require('jsonwebtoken');
 const session = require('express-session')
 const customer_routes = require('./router/auth_users.js').authenticated;
 const genl_routes = require('./router/general.js').general;
+const jwt = require('jsonwebtoken');
+require('dotenv').config(); // Add this at the top of your file if not already present
 
 const app = express();
 
@@ -12,18 +14,18 @@ app.use("/customer", session({ secret: "fingerprint_customer", resave: true, sav
 
 app.use("/customer/auth/*", function auth(req, res, next) {
     if (req.session.authorization) {
-        token = req.session.authorization['accessToken'];
-        jwt.verify(token, "access", (err, user) => {
+        const token = req.session.authorization['accessToken'];
+        const secret = process.env.ACCESS_TOKEN_SECRET;
+
+        jwt.verify(token, secret, (err, user) => {
             if (!err) {
                 req.user = user;
                 next();
-            }
-            else {
+            } else {
                 return res.status(403).json({ message: "User not authenticated" });
             }
-        })
-    }
-    else {
+        });
+    } else {
         return res.status(403).json({ message: "User not logged in" });
     }
 });
