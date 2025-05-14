@@ -11,10 +11,13 @@
   "author": "Your Name",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.18.1",
-    "express-session": "^1.17.3",
-    "jsonwebtoken": "^8.5.1",
-    "nodemon": "^2.0.19",
-    "he": "^1.2.0"
+    "express": "^5.0.0"
+    "path-to-regexp": "^8.0.0",
+    "body-parser": "^1.20.3",
+    "cookie": "^0.7.0",
+    "jsonwebtoken": "^9.0.0",
+    "semver": "^7.5.2",
+    "he": "^1.2.0",
+    "braces": "^3.0.3"
   }
 }
