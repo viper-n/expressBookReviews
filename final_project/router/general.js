@@ -50,16 +50,22 @@ public_users.get('/isbn/:isbn', function (req, res) {
 });
 
 // Get book details based on author (can return multiple books if author is repeated)
+const he = require('he');
+
 public_users.get('/author/:author', function (req, res) {
-    getBooksByAuthor(req.params.author)
+    const authorParam = req.params.author;
+
+    getBooksByAuthor(authorParam)
         .then((foundBooks) => {
             res.send(foundBooks);
         })
         .catch((err) => {
             console.error("Error:", err);
-            res.status(404).json({ message: `Error: Author ${req.params.author} not found!` });
+            const safeAuthor = he.encode(authorParam); // Sanitize user input
+            res.status(404).json({ message: `Error: Author ${safeAuthor} not found!` });
         });
 });
+
 // Function to retrieve books by author
 function getBooksByAuthor(author) {
     return new Promise((resolve, reject) => {
