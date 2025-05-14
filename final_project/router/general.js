@@ -84,14 +84,20 @@ function getBooksByAuthor(author) {
 }
 
 // Get all books based on title
+const he = require('he');
+
 public_users.get('/title/:title', function (req, res) {
-    getBooksByTitle(req.params.title)
+    const titleParam = req.params.title;
+
+    getBooksByTitle(titleParam)
         .then((foundBooks) => res.send(foundBooks))
         .catch((err) => {
             console.error("Error:", err);
-            res.status(404).json({ message: `Error: Title ${req.params.title} not found!` });
-        })
+            const safeTitle = he.encode(titleParam); // sanitize for safe output
+            res.status(404).json({ message: `Error: Title ${safeTitle} not found!` });
+        });
 });
+
 // Function to retrieve books by title
 function getBooksByTitle(title) {
     return new Promise((resolve, reject) => {
