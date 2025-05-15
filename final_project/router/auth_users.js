@@ -2,6 +2,10 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 let books = require("./booksdb.js");
 const regd_users = express.Router();
+const session = require("express-session");
+const { body, validationResult } = require("express-validator");
+
+const he = require("he");
 
 let users = [];
 
@@ -28,27 +32,61 @@ const authenticatedUser = (username, password) => {
 }
 
 //only registered users can login
-regd_users.post("/login", (req, res) => {
-    const username = req.body.username;
-    const password = req.body.password;
+const regd_users = express.Router();
 
-    if (!username || !password) {
-        return res.status(404).json({ message: "Error logging in!" });
-    }
+// Assume this is a secure password check (e.g., using bcrypt)
+function authenticatedUser(username, password) {
+    // Your actual auth logic here
+    return true; // placeholder
+}
 
-    if (authenticatedUser(username, password)) {
-        let accessToken = jwt.sign({
-            data: password
-        }, 'access', { expiresIn: 60 * 60 });
-        req.session.authorization = {
-            accessToken, username
+regd_users.use(express.json());
+regd_users.use(session({
+    secret: 'your-session-secret', // use env vars in production
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: false } // set true if using HTTPS
+}));
+
+regd_users.post("/login",
+    // Input validation & sanitization
+    body('username').trim().escape(),
+    body('password').notEmpty(),
+
+    (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ message: "Invalid input.", errors: errors.array() });
         }
-        return res.status(200).send("User successfully logged in");
+
+        const { username, password } = req.body;
+
+        if (!username || !password) {
+            return res.status(400).json({ message: "Username and password required." });
+        }
+
+        if (authenticatedUser(username, password)) {
+            // Do NOT put password in JWT payload
+            const accessToken = jwt.sign({ username }, 'access', { expiresIn: '1h' });
+
+            // Regenerate session to prevent fixation attacks
+            req.session.regenerate(err => {
+                if (err) {
+                    return res.status(500).json({ message: "Session error." });
+                }
+
+                req.session.authorization = {
+                    accessToken,
+                    username
+                };
+
+                return res.status(200).json({ message: "User successfully logged in." });
+            });
+        } else {
+            return res.status(401).json({ message: "Invalid login credentials." });
+        }
     }
-    else {
-        return res.status(208).json({ message: "Invalid Login. Check username and password" });
-    }
-});
+);
 
 // Add a book review
 regd_users.put("/auth/review/:isbn", (req, res) => {
@@ -65,8 +103,6 @@ regd_users.put("/auth/review/:isbn", (req, res) => {
 });
 
 // Delete a book review
-const he = require("he");
-
 regd_users.delete("/auth/review/:isbn", (req, res) => {
     let isbn = req.params.isbn;
     let book = books[isbn];
