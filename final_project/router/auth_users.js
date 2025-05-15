@@ -104,23 +104,27 @@ regd_users.put("/auth/review/:isbn", (req, res) => {
 
 // Delete a book review
 regd_users.delete("/auth/review/:isbn", (req, res) => {
-    let isbn = req.params.isbn;
-    let book = books[isbn];
-    let username = req.session.authorization.username;
+    const rawIsbn = req.params.isbn;
+    const isbn = he.encode(rawIsbn); // Escape to prevent XSS in response
+    const book = books[rawIsbn]; // Use the raw version for lookup
+    const username = req.session?.authorization?.username;
 
-    const escapedIsbn = he.encode(isbn); // sanitize output
+    if (!username) {
+        return res.status(401).json({ message: "Unauthorized" });
+    }
 
     if (book) {
         if (book.reviews[username]) {
             delete book.reviews[username];
-            return res.send(`Review for ISBN ${escapedIsbn} deleted`);
+            return res.type('text').send(`Review for ISBN ${isbn} deleted`);
         } else {
-            return res.send("Review not found!");
+            return res.status(404).type('text').send("Review not found!");
         }
     } else {
-        return res.send("Unable to find book!");
+        return res.status(404).type('text').send("Unable to find book!");
     }
 });
+
 
 
 module.exports.authenticated = regd_users;
